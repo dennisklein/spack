@@ -21,7 +21,7 @@ class ABI(object):
     def architecture_compatible(self, parent, child):
         """Return true if parent and child have ABI compatible targets."""
         return not parent.architecture or not child.architecture or \
-            parent.architecture == child.architecture
+            parent.architecture.satisfies(child.architecture)
 
     @memoized
     def _gcc_get_libstdcxx_version(self, version):
