@@ -189,6 +189,7 @@ default_format = '{name}{@version}'
 default_format += '{%compiler.name}{@compiler.version}{compiler_flags}'
 default_format += '{variants}{arch=architecture}'
 
+default_external_format = '{name}{@version}'
 
 def colorize_spec(spec):
     """Returns a spec colorized according to the colors specified in
@@ -3817,7 +3818,11 @@ class Spec(object):
         show_types = kwargs.pop('show_types', False)
         deptypes = kwargs.pop('deptypes', 'all')
         recurse_dependencies = kwargs.pop('recurse_dependencies', True)
+        show_external = kwargs.pop('show_external', False)
+        fmt_external = kwargs.pop('external_format', default_external_format)
         check_kwargs(kwargs, self.tree)
+
+        external_keyword = 'external'[:hlen].ljust(hlen)
 
         out = ""
         for d, dep_spec in self.traverse_edges(
@@ -3843,7 +3848,10 @@ class Spec(object):
                     out += colorize("@r{[-]}  ", color=color)  # missing
 
             if hashes:
-                out += colorize('@K{%s}  ', color=color) % node.dag_hash(hlen)
+                if show_external and node.external:
+                    out += colorize('@b{%s}  ', color=color) % external_keyword
+                else:
+                    out += colorize('@K{%s}  ', color=color) % node.dag_hash(hlen)
 
             if show_types:
                 types = set()
@@ -3866,7 +3874,14 @@ class Spec(object):
             out += ("    " * d)
             if d > 0:
                 out += "^"
-            out += node.format(fmt, color=color) + "\n"
+
+            if node.external:
+                out += node.format(fmt_external, color=color)
+                external_info = ('in', node.external_path) if node.external_path else ('via', node.external_module)
+                out += colorize(' @K{%s %s}', color=color) % external_info
+            else:
+                out += node.format(fmt, color=color)
+            out += "\n"
 
             # Check if we wanted just the first line
             if not recurse_dependencies:
